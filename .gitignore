@@ -1,0 +1,17 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+
+# notebooks
+.ipynb_checkpoints/
+
+# vector stores / db locales
+chroma_db/
+chroma_db_COMPLETE/
+*.sqlite3
+
+# OS
+.DS_Store
