@@ -41,7 +41,7 @@ vectorstore = Chroma(
     embedding_function=embeddings
 )
 
-retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
 
 # ===============================
 # LLM
@@ -51,21 +51,27 @@ llm = ChatMistralAI(model="mistral-large-latest")
 # ===============================
 # PROMPT
 # ===============================
-prompt_template = """
-You are an assistant for question-answering tasks.
-Use the following context to answer the question.
-If you don't know the answer, say you don't know.
-Use three sentences maximum.
 
-Question: {question}
+prompt = ChatPromptTemplate.from_template("""
+You are an expert assistant.
+
+Use ONLY the information provided in the context to answer the question.
+If the answer is not in the context, say clearly that you don't know.
+
+Your answer must:
+- be detailed
+- be structured
+- include explanations
+- use bullet points when relevant
+
+Question:
+{question}
 
 Context:
 {context}
 
 Answer:
-"""
-
-prompt = ChatPromptTemplate.from_template(prompt_template)
+""")
 
 # ===============================
 # FORMAT DOCS
@@ -89,10 +95,38 @@ rag_chain = (
 # ===============================
 # UI INTERACTION
 # ===============================
+#question = st.text_input("Pose ta question")
+
+#if question:
+    #with st.spinner("Recherche de la réponse..."):
+        #answer = rag_chain.invoke(question)
+        #st.markdown("### ✅ Réponse")
+        #st.write(answer)
+
 question = st.text_input("Pose ta question")
 
 if question:
-    with st.spinner("Recherche de la réponse..."):
-        answer = rag_chain.invoke(question)
-        st.markdown("### ✅ Réponse")
-        st.write(answer)
+    # 1️⃣ récupérer les documents
+    docs = retriever.invoke(question)
+
+    # 2️⃣ afficher les sources
+    st.subheader("📄 Documents utilisés")
+    for i, doc in enumerate(docs):
+        st.markdown(f"**Chunk {i+1}**")
+        st.markdown(f"- **Source** : {doc.metadata.get('source', 'inconnu')}")
+        st.markdown(f"- **Contenu** : {doc.page_content[:500]}...")
+        st.markdown("---")
+
+    # 3️⃣ générer la réponse
+    answer = rag_chain.invoke(question)
+
+    st.subheader("🤖 Réponse du chatbot")
+    st.write(answer)
+
+#score de similiraté
+
+docs_and_scores = vectorstore.similarity_search_with_score(question, k=5)
+
+for doc, score in docs_and_scores:
+    st.write(f"Score: {score}")
+    st.write(doc.page_content[:300])
