@@ -9,10 +9,15 @@ from langchain_weaviate.vectorstores import WeaviateVectorStore
 from langchain_huggingface import HuggingFaceEmbeddings
 import streamlit as st
 import weaviate
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+#from langchain_text_splitters import RecursiveCharacterTextSplitter
 from transformers import AutoTokenizer
 from pathlib import Path
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
+#from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from weaviate import connect_to_local
+
+
+
+
 
 
 load_dotenv()
@@ -21,54 +26,34 @@ st.set_page_config(page_title="RAG MVP", page_icon="🧩 ")
 st.title(" 🤖 RAG MVP – Local")
 
 
+client = connect_to_local()
 
 
 
-
-
-
-
-
-
-
-loader = DirectoryLoader("/Users/AI/Desktop/text_parsing", glob="**/*.txt", loader_cls = TextLoader, loader_kwargs={"encoding": "utf-8"}) 
-
-docs = loader.load()
-
-
-tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-mpnet-base-v2")   
-splitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
-    tokenizer,
-    chunk_size=300,
-    chunk_overlap=50
-    )   
-splitted_docs = splitter.split_documents(docs)
-
-
-
-client = weaviate.connect_to_local(
-    host="localhost", 
-    port=8080,
-    grpc_port=50051,
-)
-
-
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-
-
-vectorstore = WeaviateVectorStore.from_documents(
-    splitted_docs, 
-    embeddings, 
-    client=client, 
-    by_text=False, 
-    tenant="projet_LLM3",
+embeddings = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-mpnet-base-v2"
 )
 
 
 
 
-llm = ChatMistralAI(model="mistral-small-latest")
-retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 2, "tenant": "projet_LLM3"})
+#weaviate.from_documents(splitted_docs, 
+#    embeddings, 
+#    client=client,
+#    index_name="projet_LLM"
+#)
+
+vectorstore = WeaviateVectorStore(
+    client=client,
+    index_name="projet_LLM",
+    text_key="text",
+    embedding=embeddings
+)
+
+
+
+
+retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 2})
 prompt = """
 You are an assistant for question-answering tasks. 
 Use the following pieces of retrieved context to answer the question. 
@@ -88,6 +73,8 @@ prompt = ChatPromptTemplate(
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
+
+llm = ChatMistralAI(model="mistral-small-latest")
 
 rag_chain = (
     {"context": retriever | format_docs, "question": RunnablePassthrough()} 

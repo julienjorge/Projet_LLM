@@ -1,0 +1,9 @@
+streamlit
+langchain
+langchain_core
+langchain_mistralai
+langchain_weaviate
+langchain_huggingface
+python_dotenv
+sentence_tranformers
+weaviate_client
