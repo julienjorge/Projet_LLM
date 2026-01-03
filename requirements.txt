@@ -1,0 +1,27 @@
+altair
+pandas
+streamlit
+
+# UI
+streamlit
+
+# LangChain core
+langchain
+langchain-core
+langchain-community
+langchain-huggingface
+
+# LLM
+langchain-mistralai
+
+# Vector database
+chromadb
+
+# Embeddings
+sentence-transformers
+
+# Utils
+python-dotenv
+numpy
+scikit-learn
+pysqlite3-binary
