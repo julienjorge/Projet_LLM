@@ -110,7 +110,7 @@ if not st.session_state.initialized:
         st.markdown("<br><br>", unsafe_allow_html=True)
         _, col_img, _ = st.columns([1, 2, 1])
         with col_img:
-            st.image("ChatGPT Image 18 déc. 2025.png", width=400)
+            st.image("logo.png", width=400)
             st.markdown("<div class='oracle-title'>THE CLINICAL ORACLE</div>", unsafe_allow_html=True)
             bar = st.progress(0)
             for i in range(101):
@@ -121,7 +121,7 @@ if not st.session_state.initialized:
 
 # --- 5. SIDEBAR (Command Center) ---
 with st.sidebar:
-    st.image("ChatGPT Image 18 déc. 2025.png", use_container_width=True)
+    st.image("logo.png", use_container_width=True)
     st.markdown("<h2 style='color:#0047AB; font-family:Orbitron; text-align:center;'>COMMAND CENTER</h2>", unsafe_allow_html=True)
     
     if st.button("🗑️ CLEAR CONVERSATION"):
