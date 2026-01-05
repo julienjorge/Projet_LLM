@@ -129,47 +129,61 @@ if not st.session_state.initialized:
 
 # --- 5. SIDEBAR (Command Center) ---
 with st.sidebar:
+
     st.image("logo.png", use_container_width=True)
-    st.markdown("<h2 style='color:#0047AB; font-family:Orbitron; text-align:center;'>COMMAND CENTER</h2>", unsafe_allow_html=True)
-    
-    if st.button("🗑️ CLEAR CONVERSATION"):
+    st.markdown(
+        "<h2 style='color:#0047AB; font-family:Orbitron; text-align:center;'>COMMAND CENTER</h2>",
+        unsafe_allow_html=True
+    )
+
+    if st.button("🧹 CLEAR CONVERSATION"):
         st.session_state.chat_history = []
         st.session_state.last_docs = []
         st.rerun()
 
     tabs = st.tabs(["SETTINGS", "ARCHIVES"])
+
     with tabs[0]:
         st.slider(
-    "Scan Depth (Chunks)",
-    4, 30,
-    st.session_state.k_val,
-    key="k_val",
-    on_change=invalidate_results
-)
+            "Scan Depth (Chunks)",
+            4, 30,
+            st.session_state.k_val,
+            key="k_val",
+            on_change=invalidate_results
+        )
 
-st.toggle(
-    "Expert Data Overlay",
-    key="expert_overlay",
-    value=True,
-    on_change=invalidate_results
-)
+        st.toggle(
+            "Expert Data Overlay",
+            key="expert_overlay",
+            value=True,
+            on_change=invalidate_results
+        )
 
-st.toggle(
-    "Show Similarity Scores",
-    key="show_scores",
-    value=False,
-    on_change=invalidate_results
-)
-  
-with tabs[1]:
+        st.toggle(
+            "Show Similarity Scores",
+            key="show_scores",
+            value=False,
+            on_change=invalidate_results
+        )
+
+        st.markdown(
+            "<div style='text-align:center; color:#0047AB; font-family:Orbitron; font-size:0.7rem;'>"
+            "MEDICAL AGENT v3.0 ELITE</div>",
+            unsafe_allow_html=True
+        )
+
+    with tabs[1]:
         if os.path.exists(ARCHIVE_FILE):
             with open(ARCHIVE_FILE, "r", encoding="utf-8") as f:
                 history_files = json.load(f)
                 for item in reversed(history_files[-5:]):
-                    # Clé unique basée sur le timestamp
-                    if st.button(f"📄 {item['timestamp']}", key=f"arch_{item['timestamp']}"):
-                        st.session_state.chat_history = item['full_chat']
-                        st.rerun()
+                    if st.button(
+                       f"🕘 {item['timestamp']}",
+                       key=f"arch_{item['timestamp']}"
+):
+                      st.session_state.chat_history = item["full_chat"]
+                      st.rerun()
+
     
 st.markdown("---")
 st.markdown("<div style='text-align:center; color:#0047AB; font-family:Orbitron; font-size:0.7rem;'>MEDICAL AGENT v3.0 ELITE</div>", unsafe_allow_html=True)
@@ -206,10 +220,10 @@ if submit_button and query:
 if st.session_state.chat_history:
     st.markdown("---")
     
-    if expert_overlay and st.session_state.last_docs:
+    if st.session_state.expert_overlay and st.session_state.last_docs:
         st.markdown("### 📁 RAW DATA CHUNKS (LAST SCAN)")
         for i, (doc, score) in enumerate(st.session_state.last_docs):
-            score_text = f" | SCORE: {score:.4f}" if show_scores else ""
+            score_text = f" | SCORE: {score:.4f}" if st.session_state.show_scores else ""
             source_path = doc.metadata.get('source','')
             with st.expander(f"SOURCE DATA {i+1} | {Path(source_path).name}{score_text}"):
                 st.write(doc.page_content)
