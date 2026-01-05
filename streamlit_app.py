@@ -7,6 +7,9 @@ from dotenv import load_dotenv
 from pathlib import Path
 from datetime import datetime
 
+def invalidate_results():
+    st.session_state.last_docs = []
+
 # --- 1. CONFIG & PERSISTANCE ---
 load_dotenv()
 ARCHIVE_FILE = "archives_oracle.json"
@@ -136,12 +139,29 @@ with st.sidebar:
 
     tabs = st.tabs(["SETTINGS", "ARCHIVES"])
     with tabs[0]:
-        # Utilisation de la clé session_state pour que la valeur survive au rerun
-        st.session_state.k_val = st.slider("Scan Depth (Chunks)", 4, 30, st.session_state.k_val)
-        expert_overlay = st.toggle("Expert Data Overlay", value=True)
-        show_scores = st.toggle("Show Similarity Scores", value=False)
-    
-    with tabs[1]:
+        st.slider(
+    "Scan Depth (Chunks)",
+    4, 30,
+    st.session_state.k_val,
+    key="k_val",
+    on_change=invalidate_results
+)
+
+st.toggle(
+    "Expert Data Overlay",
+    key="expert_overlay",
+    value=True,
+    on_change=invalidate_results
+)
+
+st.toggle(
+    "Show Similarity Scores",
+    key="show_scores",
+    value=False,
+    on_change=invalidate_results
+)
+  
+with tabs[1]:
         if os.path.exists(ARCHIVE_FILE):
             with open(ARCHIVE_FILE, "r", encoding="utf-8") as f:
                 history_files = json.load(f)
@@ -151,8 +171,8 @@ with st.sidebar:
                         st.session_state.chat_history = item['full_chat']
                         st.rerun()
     
-    st.markdown("---")
-    st.markdown("<div style='text-align:center; color:#0047AB; font-family:Orbitron; font-size:0.7rem;'>MEDICAL AGENT v3.0 ELITE</div>", unsafe_allow_html=True)
+st.markdown("---")
+st.markdown("<div style='text-align:center; color:#0047AB; font-family:Orbitron; font-size:0.7rem;'>MEDICAL AGENT v3.0 ELITE</div>", unsafe_allow_html=True)
 
 # --- 6. MAIN ---
 st.markdown("<div class='oracle-title'>THE CLINICAL ORACLE</div>", unsafe_allow_html=True)
