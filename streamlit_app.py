@@ -11,7 +11,6 @@ from datetime import datetime
 load_dotenv()
 ARCHIVE_FILE = "archives_oracle.json"
 
-# --- SESSION STATE INIT ---
 if "initialized" not in st.session_state:
     st.session_state.initialized = False
 if "chat_history" not in st.session_state:
@@ -19,7 +18,7 @@ if "chat_history" not in st.session_state:
 if "last_docs" not in st.session_state:
     st.session_state.last_docs = []
 
-# ✅ PARAMÈTRES UI (CRITIQUE)
+# 🔧 AJOUT MINIMAL : persistance des SETTINGS
 if "k_val" not in st.session_state:
     st.session_state.k_val = 12
 if "expert_overlay" not in st.session_state:
@@ -27,27 +26,23 @@ if "expert_overlay" not in st.session_state:
 if "show_scores" not in st.session_state:
     st.session_state.show_scores = False
 
-
 def save_to_archive(history):
     archive_data = []
     if os.path.exists(ARCHIVE_FILE):
         with open(ARCHIVE_FILE, "r", encoding="utf-8") as f:
             archive_data = json.load(f)
-
     entry = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "full_chat": history
     }
     archive_data.append(entry)
-
     with open(ARCHIVE_FILE, "w", encoding="utf-8") as f:
         json.dump(archive_data, f, indent=4, ensure_ascii=False)
 
-
 st.set_page_config(page_title="THE CLINICAL ORACLE", page_icon="🧬", layout="wide")
 
-# --- 2. STYLE ---
-st.markdown("""<style> ... </style>""", unsafe_allow_html=True)
+# --- 2. STYLE ULTRA-COBALT ÉLECTRIQUE ---
+st.markdown("""<style>/* STYLE INCHANGÉ */</style>""", unsafe_allow_html=True)
 
 # --- 3. ENGINE LOADING ---
 from langchain_mistralai import ChatMistralAI
@@ -81,7 +76,7 @@ if not st.session_state.initialized:
     st.session_state.initialized = True
     placeholder.empty()
 
-# --- 5. SIDEBAR ---
+# --- 5. SIDEBAR (Command Center) ---
 with st.sidebar:
     st.image("logo.png", use_container_width=True)
     st.markdown("<h2 style='color:#0047AB; font-family:Orbitron; text-align:center;'>COMMAND CENTER</h2>", unsafe_allow_html=True)
@@ -92,7 +87,6 @@ with st.sidebar:
         st.rerun()
 
     tabs = st.tabs(["SETTINGS", "ARCHIVES"])
-
     with tabs[0]:
         st.session_state.k_val = st.slider(
             "Scan Depth (Chunks)", 4, 30, st.session_state.k_val
@@ -113,9 +107,6 @@ with st.sidebar:
                         st.session_state.chat_history = item['full_chat']
                         st.rerun()
 
-    st.markdown("---")
-    st.markdown("<div style='text-align:center; color:#0047AB; font-family:Orbitron; font-size:0.7rem;'>MEDICAL AGENT v3.0 ELITE</div>", unsafe_allow_html=True)
-
 # --- 6. MAIN ---
 st.markdown("<div class='oracle-title'>THE CLINICAL ORACLE</div>", unsafe_allow_html=True)
 st.markdown("<div class='nih-subtitle'>NIH CLINICAL INTELLIGENCE SYSTEM</div>", unsafe_allow_html=True)
@@ -133,25 +124,19 @@ if submit_button and query:
         search_results = vectorstore.similarity_search_with_relevance_scores(
             query, k=st.session_state.k_val
         )
-
         docs = [res[0] for res in search_results]
         context = "\n\n".join([d.page_content for d in docs])
-
         prompt = ChatPromptTemplate.from_template(
             "Analyze carefully: {context}\n\nQuestion: {question}"
         )
         response = (prompt | llm | StrOutputParser()).invoke(
             {"context": context, "question": query}
         )
-
         st.session_state.chat_history.append({"query": query, "response": response})
         st.session_state.last_docs = search_results
         st.rerun()
 
-# --- MODE EXPERT ---
 if st.session_state.chat_history:
-    st.markdown("---")
-
     if st.session_state.expert_overlay and st.session_state.last_docs:
         st.markdown("### 📁 RAW DATA CHUNKS (LAST SCAN)")
         for i, (doc, score) in enumerate(st.session_state.last_docs):
