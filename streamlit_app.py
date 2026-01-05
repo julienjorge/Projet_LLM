@@ -118,7 +118,7 @@ if not st.session_state.initialized:
                 bar.progress(i)
     st.session_state.initialized = True
     placeholder.empty()
-
+    
 # --- 5. SIDEBAR (Command Center) ---
 with st.sidebar:
     st.image("logo.png", use_container_width=True)
@@ -129,28 +129,35 @@ with st.sidebar:
         st.session_state.last_docs = []
         st.rerun()
 
-    # --- INITIALISATION DES PARAMÈTRES (Avant les onglets pour qu'ils fonctionnent) ---
     tabs = st.tabs(["SETTINGS", "ARCHIVES"])
     
     with tabs[0]:
-        # On définit les variables ici, elles seront accessibles dans la section 6
-        k_val = st.slider("Scan Depth (Chunks)", 4, 30, 12)
-        expert_overlay = st.toggle("Expert Data Overlay", value=True)
-        show_scores = st.toggle("Show Similarity Scores", value=False)
+        # ON PASSE PAR SESSION_STATE POUR CHAQUE RÉGLAGE
+        if "k_val" not in st.session_state: st.session_state.k_val = 12
+        if "expert_overlay" not in st.session_state: st.session_state.expert_overlay = True
+        if "show_scores" not in st.session_state: st.session_state.show_scores = False
+
+        # On lie les widgets directement au session_state via le paramètre 'key'
+        st.slider("Scan Depth (Chunks)", 4, 30, key="k_val")
+        st.toggle("Expert Data Overlay", key="expert_overlay")
+        st.toggle("Show Similarity Scores", key="show_scores")
+        
+        # On définit les variables locales pour le reste du script (Section 6)
+        k_val = st.session_state.k_val
+        expert_overlay = st.session_state.expert_overlay
+        show_scores = st.session_state.show_scores
     
     with tabs[1]:
         if os.path.exists(ARCHIVE_FILE):
             with open(ARCHIVE_FILE, "r", encoding="utf-8") as f:
                 history_files = json.load(f)
                 for item in reversed(history_files[-5:]):
-                    # Utilisation d'une clé unique pour éviter les conflits Streamlit
                     if st.button(f"📄 {item['timestamp']}", key=f"btn_{item['timestamp']}"):
                         st.session_state.chat_history = item['full_chat']
                         st.rerun()
     
     st.markdown("---")
     st.markdown("<div style='text-align:center; color:#0047AB; font-family:Orbitron; font-size:0.7rem;'>MEDICAL AGENT v3.0 ELITE</div>", unsafe_allow_html=True)
-
 # --- 6. MAIN ---
 st.markdown("<div class='oracle-title'>THE CLINICAL ORACLE</div>", unsafe_allow_html=True)
 st.markdown("<div class='nih-subtitle'>NIH CLINICAL INTELLIGENCE SYSTEM</div>", unsafe_allow_html=True)
