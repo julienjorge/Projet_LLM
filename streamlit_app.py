@@ -129,8 +129,11 @@ with st.sidebar:
         st.session_state.last_docs = []
         st.rerun()
 
+    # --- INITIALISATION DES PARAMÈTRES (Avant les onglets pour qu'ils fonctionnent) ---
     tabs = st.tabs(["SETTINGS", "ARCHIVES"])
+    
     with tabs[0]:
+        # On définit les variables ici, elles seront accessibles dans la section 6
         k_val = st.slider("Scan Depth (Chunks)", 4, 30, 12)
         expert_overlay = st.toggle("Expert Data Overlay", value=True)
         show_scores = st.toggle("Show Similarity Scores", value=False)
@@ -140,7 +143,8 @@ with st.sidebar:
             with open(ARCHIVE_FILE, "r", encoding="utf-8") as f:
                 history_files = json.load(f)
                 for item in reversed(history_files[-5:]):
-                    if st.button(f"📄 {item['timestamp']}", key=item['timestamp']):
+                    # Utilisation d'une clé unique pour éviter les conflits Streamlit
+                    if st.button(f"📄 {item['timestamp']}", key=f"btn_{item['timestamp']}"):
                         st.session_state.chat_history = item['full_chat']
                         st.rerun()
     
