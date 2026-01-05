@@ -7,23 +7,16 @@ from dotenv import load_dotenv
 from pathlib import Path
 from datetime import datetime
 
-def invalidate_results():
-    st.session_state.last_docs = []
-
 # --- 1. CONFIG & PERSISTANCE ---
 load_dotenv()
 ARCHIVE_FILE = "archives_oracle.json"
 
-# Initialisation rigoureuse du session_state
 if "initialized" not in st.session_state:
     st.session_state.initialized = False
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "last_docs" not in st.session_state:
     st.session_state.last_docs = []
-# Ajout des clés pour les réglages persistants
-if "k_val" not in st.session_state:
-    st.session_state.k_val = 12
 
 def save_to_archive(history):
     archive_data = []
@@ -85,7 +78,6 @@ st.markdown("""
     .stButton>button { 
         background: #000000 !important; color: #0047AB !important; 
         border: 1px solid #0047AB !important; font-family: 'Orbitron', sans-serif; font-weight: bold;
-        width: 100%;
     }
     .stButton>button:hover { 
         border: 1px solid #FFFFFF !important; color: #FFFFFF !important; box-shadow: 0 0 15px #0047AB;
@@ -129,62 +121,31 @@ if not st.session_state.initialized:
 
 # --- 5. SIDEBAR (Command Center) ---
 with st.sidebar:
-
     st.image("logo.png", use_container_width=True)
-    st.markdown(
-        "<h2 style='color:#0047AB; font-family:Orbitron; text-align:center;'>COMMAND CENTER</h2>",
-        unsafe_allow_html=True
-    )
-
-    if st.button("🧹 CLEAR CONVERSATION"):
+    st.markdown("<h2 style='color:#0047AB; font-family:Orbitron; text-align:center;'>COMMAND CENTER</h2>", unsafe_allow_html=True)
+    
+    if st.button("🗑️ CLEAR CONVERSATION"):
         st.session_state.chat_history = []
         st.session_state.last_docs = []
         st.rerun()
 
     tabs = st.tabs(["SETTINGS", "ARCHIVES"])
-
     with tabs[0]:
-        st.slider(
-            "Scan Depth (Chunks)",
-            4, 30,
-            st.session_state.k_val,
-            key="k_val",
-            on_change=invalidate_results
-        )
-
-        st.toggle(
-            "Expert Data Overlay",
-            key="expert_overlay",
-            value=True,
-        )
-
-        st.toggle(
-            "Show Similarity Scores",
-            key="show_scores",
-            value=False,
-        )
-
-        st.markdown(
-            "<div style='text-align:center; color:#0047AB; font-family:Orbitron; font-size:0.7rem;'>"
-            "MEDICAL AGENT v3.0 ELITE</div>",
-            unsafe_allow_html=True
-        )
-
+        k_val = st.slider("Scan Depth (Chunks)", 4, 30, 12)
+        expert_overlay = st.toggle("Expert Data Overlay", value=True)
+        show_scores = st.toggle("Show Similarity Scores", value=False)
+    
     with tabs[1]:
         if os.path.exists(ARCHIVE_FILE):
             with open(ARCHIVE_FILE, "r", encoding="utf-8") as f:
                 history_files = json.load(f)
                 for item in reversed(history_files[-5:]):
-                    if st.button(
-                       f"🕘 {item['timestamp']}",
-                       key=f"arch_{item['timestamp']}"
-):
-                      st.session_state.chat_history = item["full_chat"]
-                      st.rerun()
-
+                    if st.button(f"📄 {item['timestamp']}", key=item['timestamp']):
+                        st.session_state.chat_history = item['full_chat']
+                        st.rerun()
     
-st.markdown("---")
-st.markdown("<div style='text-align:center; color:#0047AB; font-family:Orbitron; font-size:0.7rem;'>MEDICAL AGENT v3.0 ELITE</div>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("<div style='text-align:center; color:#0047AB; font-family:Orbitron; font-size:0.7rem;'>MEDICAL AGENT v3.0 ELITE</div>", unsafe_allow_html=True)
 
 # --- 6. MAIN ---
 st.markdown("<div class='oracle-title'>THE CLINICAL ORACLE</div>", unsafe_allow_html=True)
@@ -202,28 +163,31 @@ with st.form(key='chat_form', clear_on_submit=True):
 
 if submit_button and query:
     with st.spinner("⚡ ORACLE ANALYZING..."):
-        # On utilise k_val depuis le session_state
-        search_results = vectorstore.similarity_search_with_relevance_scores(query, k=st.session_state.k_val)
+        # On utilise similarity_search_with_relevance_scores pour le mode expert
+        search_results = vectorstore.similarity_search_with_relevance_scores(query, k=k_val)
         
         docs = [res[0] for res in search_results]
+        scores = [res[1] for res in search_results]
+        
         context = "\n\n".join([d.page_content for d in docs])
         prompt = ChatPromptTemplate.from_template("Analyze carefully: {context}\n\nQuestion: {question}")
         response = (prompt | llm | StrOutputParser()).invoke({"context": context, "question": query})
         
+        # Sauvegarde pour persistance affichage
         st.session_state.chat_history.append({"query": query, "response": response})
-        st.session_state.last_docs = search_results 
+        st.session_state.last_docs = search_results # On garde les docs ET les scores
         st.rerun()
 
 # Actions de fin et Mode Expert
 if st.session_state.chat_history:
     st.markdown("---")
     
-    if st.session_state.expert_overlay and st.session_state.last_docs:
+    # Affichage du Mode Expert (Chunks & Sources)
+    if expert_overlay and st.session_state.last_docs:
         st.markdown("### 📁 RAW DATA CHUNKS (LAST SCAN)")
         for i, (doc, score) in enumerate(st.session_state.last_docs):
-            score_text = f" | SCORE: {score:.4f}" if st.session_state.show_scores else ""
-            source_path = doc.metadata.get('source','')
-            with st.expander(f"SOURCE DATA {i+1} | {Path(source_path).name}{score_text}"):
+            score_text = f" | SCORE: {score:.4f}" if show_scores else ""
+            with st.expander(f"SOURCE DATA {i+1} | {Path(doc.metadata.get('source','')).name}{score_text}"):
                 st.write(doc.page_content)
     
     st.markdown("---")
