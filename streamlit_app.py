@@ -156,14 +156,12 @@ with st.sidebar:
             "Expert Data Overlay",
             key="expert_overlay",
             value=True,
-            on_change=invalidate_results
         )
 
         st.toggle(
             "Show Similarity Scores",
             key="show_scores",
             value=False,
-            on_change=invalidate_results
         )
 
         st.markdown(
